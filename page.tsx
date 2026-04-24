@@ -1,119 +1,177 @@
 'use client';
-// app/signup/page.tsx
+// app/onboarding/page.tsx
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import TriskelionSVG from '@/components/ui/TriskelionSVG';
 
-type Role = 'dominant' | 'submissive' | 'switch';
-
-const ROLES: { value: Role; label: string; desc: string }[] = [
-  { value: 'dominant',   label: 'Dominant',  desc: 'I lead the dynamic'       },
-  { value: 'submissive', label: 'Submissive', desc: 'I follow the dynamic'     },
-  { value: 'switch',     label: 'Switch',     desc: 'I move between both'      },
+const DYNAMIC_TYPES = ['D/s','M/s','O/p','DD/lg','MD/lb','CG/l','Pet Play','TPE','Other'];
+const KINKS = [
+  'Bondage','Impact Play','Protocol','Service','Sensation Play',
+  'Roleplay','Praise Kink','Orgasm Control','Collar & Lead',
+  'Aftercare Focus','Age Play','Pet Play','Power Exchange','Exhibitionism',
 ];
 
-export default function SignupPage() {
+export default function OnboardingPage() {
   const router = useRouter();
-  const [step, setStep]         = useState(1);
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [role, setRole]         = useState<Role | null>(null);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
+  const [step, setStep]           = useState(0);
+  const [displayName, setName]    = useState('');
+  const [bio, setBio]             = useState('');
+  const [location, setLocation]   = useState('');
+  const [dynamicTypes, setTypes]  = useState<string[]>([]);
+  const [kinks, setKinks]         = useState<string[]>([]);
+  const [discreet, setDiscreet]   = useState(false);
+  const [loading, setLoading]     = useState(false);
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!role) { setError('Please select your role.'); return; }
-    setError(''); setLoading(true);
+  const toggle = (arr: string[], setArr: Function, val: string) =>
+    setArr((p: string[]) => p.includes(val) ? p.filter(x => x !== val) : [...p, val]);
+
+  const finish = async () => {
+    setLoading(true);
     const supabase = createClient();
-    const { error: signUpErr } = await supabase.auth.signUp({
-      email, password,
-      options: { data: { username, role } },
-    });
-    if (signUpErr) { setError(signUpErr.message); setLoading(false); return; }
-    router.push('/onboarding');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('profiles').upsert({
+        id: user.id, display_name: displayName, bio, location,
+        dynamic_types: dynamicTypes, kinks, discreet_mode: discreet,
+        updated_at: new Date().toISOString(),
+      });
+    }
+    router.push('/track');
   };
 
+  const STEPS = ['Identity','Dynamic','Interests','Privacy','Ready'];
+  const next = () => step < 4 ? setStep(s => s + 1) : finish();
+
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-16"
-      style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 40%, #1a0d02 0%, #080806 70%)' }}>
+    <main className="min-h-screen flex flex-col bg-void px-5 pt-safe-top"
+      style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 30%, #1a0d02 0%, #080806 70%)' }}>
 
-      <Link href="/" className="mb-10">
-        <TriskelionSVG size={64} />
-      </Link>
-
-      {/* Step indicators */}
-      <div className="flex gap-2 mb-8">
-        {[1, 2].map(s => (
-          <div key={s} className={`h-0.5 w-8 rounded-full transition-colors ${step >= s ? 'bg-gold-bright' : 'bg-dim'}`} />
-        ))}
+      {/* Header */}
+      <div className="flex items-center justify-between pt-12 pb-6">
+        <button onClick={() => step > 0 ? setStep(s => s - 1) : router.back()}
+          className="font-sans text-xs text-muted tracking-widest">← Back</button>
+        <div className="flex gap-1.5">
+          {STEPS.map((_, i) => (
+            <div key={i} className={`h-0.5 w-6 rounded-full transition-colors ${step >= i ? 'bg-gold-bright' : 'bg-dim'}`} />
+          ))}
+        </div>
+        <span className="font-sans text-[10px] text-dim">{step + 1}/{STEPS.length}</span>
       </div>
 
-      {step === 1 ? (
-        <>
-          <h1 className="font-display text-3xl font-black tracking-[0.2em] gold-text mb-2">Join the Scene</h1>
-          <p className="font-serif italic text-muted mb-10">Your kink community awaits.</p>
-          <form className="w-full max-w-sm flex flex-col gap-4" onSubmit={e => { e.preventDefault(); setStep(2); }}>
-            <div>
-              <label className="label">Email</label>
-              <input className="input" type="email" value={email}
-                onChange={e => setEmail(e.target.value)} placeholder="your@email.com" required />
-            </div>
-            <div>
-              <label className="label">Password (8+ characters)</label>
-              <input className="input" type="password" value={password}
-                onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={8} />
-            </div>
-            <button type="submit" className="btn-gold mt-2">Continue</button>
-          </form>
-        </>
-      ) : (
-        <>
-          <h1 className="font-display text-3xl font-black tracking-[0.2em] gold-text mb-2">Who Are You?</h1>
-          <p className="font-serif italic text-muted mb-10">Set your scene identity.</p>
-          <form className="w-full max-w-sm flex flex-col gap-4" onSubmit={handleSignup}>
-            <div>
-              <label className="label">Username</label>
-              <input className="input" type="text" value={username}
-                onChange={e => setUsername(e.target.value)} placeholder="your_scene_name" required />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="label">Your Role</label>
-              {ROLES.map(r => (
-                <button key={r.value} type="button"
-                  onClick={() => setRole(r.value)}
-                  className={`w-full text-left p-4 rounded-xl border transition-all ${
-                    role === r.value
-                      ? 'border-gold-bright bg-gold/10'
-                      : 'border-gold-deep/25 bg-leather hover:border-gold/40'
-                  }`}>
-                  <p className={`font-display text-sm tracking-widest ${role === r.value ? 'text-gold-bright' : 'text-muted'}`}>
-                    {r.label}
-                  </p>
-                  <p className="font-sans text-xs text-dim mt-0.5">{r.desc}</p>
-                </button>
+      <div className="flex-1 overflow-y-auto pb-32">
+
+        {/* STEP 0 */}
+        {step === 0 && (
+          <div className="flex flex-col gap-4">
+            <h1 className="font-display text-2xl gold-text tracking-widest leading-tight mb-1">Build Your Scene Identity</h1>
+            <p className="font-serif italic text-muted text-sm mb-4">How the community knows you.</p>
+            <div><label className="label">Display Name</label>
+              <input className="input" value={displayName} onChange={e => setName(e.target.value)} placeholder="How you want to be known" /></div>
+            <div><label className="label">City</label>
+              <input className="input" value={location} onChange={e => setLocation(e.target.value)} placeholder="Las Vegas, NV" /></div>
+            <div><label className="label">Bio</label>
+              <textarea className="input h-24 resize-none" value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell the scene who you are..." /></div>
+          </div>
+        )}
+
+        {/* STEP 1 */}
+        {step === 1 && (
+          <div>
+            <h1 className="font-display text-2xl gold-text tracking-widest mb-1">Your Dynamic Style</h1>
+            <p className="font-serif italic text-muted text-sm mb-6">Select all that apply.</p>
+            <div className="flex flex-wrap gap-2">
+              {DYNAMIC_TYPES.map(dt => (
+                <button key={dt} onClick={() => toggle(dynamicTypes, setTypes, dt)}
+                  className={`px-4 py-2 rounded-full border text-sm font-sans transition-all ${
+                    dynamicTypes.includes(dt)
+                      ? 'border-gold-bright bg-gold/10 text-gold-bright'
+                      : 'border-gold-deep/25 bg-leather text-muted hover:border-gold/40'
+                  }`}>{dt}</button>
               ))}
             </div>
+          </div>
+        )}
 
-            {error && <p className="text-xs text-red-400 font-sans">{error}</p>}
+        {/* STEP 2 */}
+        {step === 2 && (
+          <div>
+            <h1 className="font-display text-2xl gold-text tracking-widest mb-1">Your Interests</h1>
+            <p className="font-serif italic text-muted text-sm mb-6">Shown to your matches only.</p>
+            <div className="flex flex-wrap gap-2">
+              {KINKS.map(k => (
+                <button key={k} onClick={() => toggle(kinks, setKinks, k)}
+                  className={`px-4 py-2 rounded-full border text-sm font-sans transition-all ${
+                    kinks.includes(k)
+                      ? 'border-gold-bright bg-gold/10 text-gold-bright'
+                      : 'border-gold-deep/25 bg-leather text-muted hover:border-gold/40'
+                  }`}>{k}</button>
+              ))}
+            </div>
+          </div>
+        )}
 
-            <button type="submit" disabled={loading || !role}
-              className="btn-gold mt-2 disabled:opacity-50">
-              {loading ? 'Creating...' : 'Enter Trisk'}
-            </button>
-            <button type="button" onClick={() => setStep(1)}
-              className="font-sans text-xs text-muted text-center hover:text-cream">← Back</button>
-          </form>
-        </>
-      )}
+        {/* STEP 3 */}
+        {step === 3 && (
+          <div className="flex flex-col gap-4">
+            <h1 className="font-display text-2xl gold-text tracking-widest mb-1">Privacy First</h1>
+            <p className="font-serif italic text-muted text-sm mb-4">You control everything.</p>
+            {[
+              { val: true,  label: 'Discreet Mode',  desc: 'Only verified Trisk members see your profile.' },
+              { val: false, label: 'Standard',        desc: 'Visible to all members. Easier to connect.'    },
+            ].map(o => (
+              <button key={String(o.val)} onClick={() => setDiscreet(o.val)}
+                className={`w-full text-left p-4 rounded-xl border transition-all ${
+                  discreet === o.val ? 'border-gold-bright bg-gold/8' : 'border-gold-deep/25 bg-leather'
+                }`}>
+                <div className="flex gap-3 items-start">
+                  <div className={`mt-1 w-4 h-4 rounded-full border-2 flex-shrink-0 ${discreet === o.val ? 'border-gold-bright bg-gold-bright' : 'border-muted'}`} />
+                  <div>
+                    <p className={`font-display text-sm tracking-wider ${discreet === o.val ? 'text-gold-bright' : 'text-muted'}`}>{o.label}</p>
+                    <p className="font-sans text-xs text-dim mt-0.5">{o.desc}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+            <div className="card mt-2">
+              <p className="font-sans text-[10px] text-muted leading-relaxed">
+                🔒 Your safewords, rules, and journal are always private — never shared without your consent.
+              </p>
+            </div>
+          </div>
+        )}
 
-      <p className="font-sans text-xs text-muted mt-8">
-        Already a member?{' '}
-        <Link href="/login" className="text-gold-bright hover:underline">Sign in</Link>
-      </p>
+        {/* STEP 4 */}
+        {step === 4 && (
+          <div className="flex flex-col items-center pt-8 gap-4 text-center">
+            <p className="text-5xl opacity-30 mb-2">⟁</p>
+            <h1 className="font-display text-3xl gold-text tracking-widest">You're Ready</h1>
+            <p className="font-serif italic text-muted text-base leading-relaxed">
+              Welcome to Trisk.<br/>Your scene. Your rules. Your dynamic.
+            </p>
+            <div className="flex gap-8 mt-4">
+              {[{ l: 'Track', d: 'Your dynamic' }, { l: 'Scene', d: 'Community' }].map(s => (
+                <div key={s.l}>
+                  <p className="font-display text-sm text-gold-bright tracking-widest">{s.l}</p>
+                  <p className="font-sans text-[9px] text-muted tracking-widest uppercase">{s.d}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer CTA */}
+      <div className="fixed bottom-0 left-0 right-0 px-5 pb-8 pt-4 bg-void/95 backdrop-blur-sm border-t border-gold-deep/15">
+        <button onClick={next} disabled={loading}
+          className="btn-gold w-full disabled:opacity-50">
+          {loading ? 'Setting up...' : step === 4 ? 'Enter the Scene' : 'Continue'}
+        </button>
+        {step < 4 && (
+          <button onClick={next} className="w-full text-center font-sans text-xs text-dim mt-3 hover:text-muted">
+            Skip for now
+          </button>
+        )}
+      </div>
     </main>
   );
 }

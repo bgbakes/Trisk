@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@200;300;400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply bg-void text-cream font-sans;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: rgba(196, 154, 42, 0.3);
+    color: #F7E88A;
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #080806; }
+  ::-webkit-scrollbar-thumb { background: #6B4F18; border-radius: 2px; }
+}
+
+@layer components {
+  .gold-text {
+    background: linear-gradient(135deg, #F7E88A 0%, #E8C244 35%, #C49A2A 65%, #7A5010 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .btn-gold {
+    @apply font-display text-void text-xs tracking-widest uppercase px-8 py-4 rounded-lg cursor-pointer transition-opacity hover:opacity-90 active:scale-95;
+    background: linear-gradient(90deg, #E8C244, #C49A2A);
+  }
+
+  .btn-outline {
+    @apply font-sans text-muted text-xs tracking-widest uppercase px-6 py-3 rounded-lg border border-gold-deep/40 hover:border-gold/60 hover:text-cream transition-all;
+  }
+
+  .card {
+    @apply bg-leather border border-gold-deep/20 rounded-xl p-5;
+  }
+
+  .input {
+    @apply w-full bg-leather-dark border border-gold-deep/25 rounded-lg px-4 py-3 font-sans text-sm text-cream placeholder-dim focus:outline-none focus:border-gold/60 transition-colors;
+  }
+
+  .label {
+    @apply font-sans text-[10px] tracking-[0.3em] uppercase text-muted mb-1.5 block;
+  }
+
+  .nav-link {
+    @apply font-sans text-[10px] tracking-[0.25em] uppercase text-muted hover:text-gold-bright transition-colors;
+  }
+
+  .subnav-item {
+    @apply flex-1 py-3 text-center font-sans text-[9px] tracking-[0.2em] uppercase text-muted border-b-2 border-transparent hover:text-gold-bright transition-colors cursor-pointer;
+  }
+
+  .subnav-active {
+    @apply text-gold-bright border-b-2 border-gold-bright;
+  }
+
+  .divider {
+    @apply w-full h-px bg-gradient-to-r from-transparent via-gold-deep/40 to-transparent;
+  }
+}
+
+/* PWA install prompt animation */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.pwa-prompt { animation: slideUp 0.4s ease forwards; }
